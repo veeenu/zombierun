@@ -8,8 +8,8 @@ use std::fmt::Display;
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
-use eframe::{CreationContext, Frame};
-use egui::{CentralPanel, ComboBox, Context, TopBottomPanel};
+use eframe::CreationContext;
+use egui::{CentralPanel, ComboBox, Context, Frame, ScrollArea, TopBottomPanel};
 
 use cursor::*;
 use input::{is_pressed_load, is_pressed_next, is_pressed_prev, is_pressed_save};
@@ -101,6 +101,11 @@ impl App {
         self.current_savefiles_mut().prev();
     }
 
+    fn goto_last(&mut self) {
+        let s = self.current_savefiles_mut();
+        s.goto(s.len() - 1);
+    }
+
     fn save(&mut self) -> Result<()> {
         let new_savefile = Savefile::new(&self.current_savefile_path().path)?;
         self.current_savefiles_mut().push(new_savefile);
@@ -108,6 +113,7 @@ impl App {
             "Saved".to_string(),
             Duration::from_secs(5),
         ));
+        self.goto_last();
         Ok(())
     }
 
@@ -156,7 +162,7 @@ impl App {
 }
 
 impl eframe::App for App {
-    fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
         self.update_inputs().ok();
         ctx.request_repaint_after(Duration::from_millis(120));
 
@@ -173,47 +179,6 @@ impl eframe::App for App {
                 });
         });
 
-        CentralPanel::default().show(ctx, |ui| {
-            let mut sel_index = self.current_savefiles().map(|s| s.index()).unwrap_or(0);
-            let mut to_remove: Option<usize> = None;
-            let mut to_load: Option<usize> = None;
-
-            for (idx, savefile) in self.current_savefiles_mut().data().iter().enumerate() {
-                let elapsed = savefile.saved().elapsed().as_secs_f64();
-                let hours = (elapsed / 3600.).floor();
-                let minutes = ((elapsed / 60.) % 60.).floor();
-                let seconds = (elapsed % 60.).floor();
-                let uid = savefile.uid;
-                ui.horizontal(|ui| {
-                    ui.radio_value(
-                        &mut sel_index,
-                        idx,
-                        format!(
-                            "#[{idx:02}] [{uid:03}] - {hours:02}:{minutes:02}:{seconds:02} ago"
-                        ),
-                    );
-
-                    if ui.button("Load").clicked() {
-                        to_load = Some(idx);
-                    }
-
-                    if ui.button("Remove").clicked() {
-                        to_remove = Some(idx);
-                    }
-                });
-            }
-
-            if let Some(to_load) = to_load {
-                self.load_at(to_load);
-            }
-
-            if let Some(to_remove) = to_remove {
-                self.current_savefiles_mut().remove(to_remove);
-            }
-
-            self.current_savefiles_mut().goto(sel_index);
-        });
-
         TopBottomPanel::bottom("buttons").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.button("Add savefile").clicked() {
@@ -228,6 +193,53 @@ impl eframe::App for App {
                         ui.label(message);
                     }
                 }
+            });
+        });
+
+        CentralPanel::default().show(ctx, |ui| {
+            ScrollArea::vertical().show(ui, |ui| {
+                ui.vertical(|ui| {
+                    let mut sel_index = self.current_savefiles().map(|s| s.index()).unwrap_or(0);
+                    let mut to_remove: Option<usize> = None;
+                    let mut to_load: Option<usize> = None;
+
+                    for (idx, savefile) in
+                        self.current_savefiles_mut().data().iter().enumerate().rev()
+                    {
+                        let elapsed = savefile.saved().elapsed().as_secs_f64();
+                        let hours = (elapsed / 3600.).floor();
+                        let minutes = ((elapsed / 60.) % 60.).floor();
+                        let seconds = (elapsed % 60.).floor();
+                        let uid = savefile.uid;
+                        ui.horizontal(|ui| {
+                            ui.radio_value(
+                                &mut sel_index,
+                                idx,
+                                format!(
+                                "#[{idx:02}] [{uid:03}] - {hours:02}:{minutes:02}:{seconds:02} ago"
+                            ),
+                            );
+
+                            if ui.button("Load").clicked() {
+                                to_load = Some(idx);
+                            }
+
+                            if ui.button("Remove").clicked() {
+                                to_remove = Some(idx);
+                            }
+                        });
+                    }
+
+                    if let Some(to_load) = to_load {
+                        self.load_at(to_load).ok();
+                    }
+
+                    if let Some(to_remove) = to_remove {
+                        self.current_savefiles_mut().remove(to_remove);
+                    }
+
+                    self.current_savefiles_mut().goto(sel_index);
+                });
             });
         });
     }
