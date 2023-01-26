@@ -126,6 +126,20 @@ impl App {
         Ok(())
     }
 
+    fn load_at(&mut self, idx: usize) -> Result<()> {
+        if let Some(savefile) = self
+            .current_savefiles()
+            .and_then(|savefiles| savefiles.get_at(idx))
+        {
+            savefile.load(&self.current_savefile_path().path)?;
+            self.message = Some(SelfDestructible::new(
+                format!("Loaded #{:03} ({})", idx, self.current_savefile_path().game),
+                Duration::from_secs(5),
+            ));
+        }
+        Ok(())
+    }
+
     fn update_inputs(&mut self) -> Result<()> {
         if is_pressed_next() {
             self.next_slot();
@@ -160,11 +174,11 @@ impl eframe::App for App {
         });
 
         CentralPanel::default().show(ctx, |ui| {
-            let current_savefiles = self.current_savefiles_mut();
-            let mut sel_index = current_savefiles.index();
+            let mut sel_index = self.current_savefiles().map(|s| s.index()).unwrap_or(0);
             let mut to_remove: Option<usize> = None;
+            let mut to_load: Option<usize> = None;
 
-            for (idx, savefile) in current_savefiles.data().iter().enumerate() {
+            for (idx, savefile) in self.current_savefiles_mut().data().iter().enumerate() {
                 let elapsed = savefile.saved().elapsed().as_secs_f64();
                 let hours = (elapsed / 3600.).floor();
                 let minutes = ((elapsed / 60.) % 60.).floor();
@@ -174,8 +188,14 @@ impl eframe::App for App {
                     ui.radio_value(
                         &mut sel_index,
                         idx,
-                        format!("#[{idx:02}] [{uid:03}] - {hours:02}:{minutes:02}:{seconds:02} ago"),
+                        format!(
+                            "#[{idx:02}] [{uid:03}] - {hours:02}:{minutes:02}:{seconds:02} ago"
+                        ),
                     );
+
+                    if ui.button("Load").clicked() {
+                        to_load = Some(idx);
+                    }
 
                     if ui.button("Remove").clicked() {
                         to_remove = Some(idx);
@@ -183,11 +203,15 @@ impl eframe::App for App {
                 });
             }
 
-            if let Some(to_remove) = to_remove {
-                current_savefiles.remove(to_remove);
+            if let Some(to_load) = to_load {
+                self.load_at(to_load);
             }
 
-            current_savefiles.goto(sel_index);
+            if let Some(to_remove) = to_remove {
+                self.current_savefiles_mut().remove(to_remove);
+            }
+
+            self.current_savefiles_mut().goto(sel_index);
         });
 
         TopBottomPanel::bottom("buttons").show(ctx, |ui| {
