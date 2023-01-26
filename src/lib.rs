@@ -4,7 +4,7 @@ mod savefiles;
 
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::sync::atomic::{AtomicUsize, Ordering};
+
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
@@ -90,7 +90,7 @@ impl App {
     fn current_savefiles_mut(&mut self) -> &mut Cursor<Savefile> {
         self.savefiles
             .entry(self.current_savefile_path().game)
-            .or_insert_with(|| Cursor::default())
+            .or_insert_with(Cursor::default)
     }
 
     fn next_slot(&mut self) {

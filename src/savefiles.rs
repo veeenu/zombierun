@@ -17,7 +17,7 @@ impl Savefile {
     pub fn new(path: &Path) -> Result<Self> {
         static UID: AtomicUsize = AtomicUsize::new(0);
         let saved = Instant::now();
-        let data = std::fs::read(&path)?;
+        let data = std::fs::read(path)?;
         let uid = UID.fetch_add(1, Ordering::Relaxed);
 
         Ok(Self { data, saved, uid })
@@ -28,7 +28,7 @@ impl Savefile {
     }
 
     pub fn load(&self, path: &Path) -> Result<()> {
-        std::fs::write(&path, &self.data)?;
+        std::fs::write(path, &self.data)?;
         Ok(())
     }
 }
@@ -66,7 +66,7 @@ impl Display for SavefilePath {
             write!(f, "...{}", &path[path.len() - 32..])?;
             
         } else {
-            write!(f, "{}", path)?;
+            write!(f, "{path}")?;
         }
 
         Ok(())
@@ -84,7 +84,7 @@ fn get_savefiles_path_eldenring() -> Result<Vec<PathBuf>> {
     .iter()
     .collect();
 
-    Ok(std::fs::read_dir(&savefile_path)
+    Ok(std::fs::read_dir(savefile_path)
         .map_err(|e| anyhow!("{}", e))?
         .filter_map(|e| e.ok())
         .filter_map(|e| {
@@ -94,7 +94,7 @@ fn get_savefiles_path_eldenring() -> Result<Vec<PathBuf>> {
                 None
             }
         })
-        .map(|path| PathBuf::from(path).join("ER0000.sl2"))
+        .map(|path| path.join("ER0000.sl2"))
         .collect())
 }
 
@@ -109,7 +109,7 @@ fn get_savefiles_path_ds3() -> Result<Vec<PathBuf>> {
     .iter()
     .collect();
 
-    Ok(std::fs::read_dir(&savefile_path)
+    Ok(std::fs::read_dir(savefile_path)
         .map_err(|e| anyhow!("{}", e))?
         .filter_map(|e| e.ok())
         .filter_map(|e| {
@@ -119,6 +119,6 @@ fn get_savefiles_path_ds3() -> Result<Vec<PathBuf>> {
                 None
             }
         })
-        .map(|path| PathBuf::from(path).join("DS30000.sl2"))
+        .map(|path| path.join("DS30000.sl2"))
         .collect())
 }
