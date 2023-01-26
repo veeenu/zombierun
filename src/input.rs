@@ -1,5 +1,5 @@
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    GetAsyncKeyState, VIRTUAL_KEY, VK_L, VK_DOWN, VK_N, VK_LSHIFT, VK_UP,
+    GetAsyncKeyState, VIRTUAL_KEY, VK_DOWN, VK_L, VK_LSHIFT, VK_N, VK_UP,
 };
 
 #[inline]

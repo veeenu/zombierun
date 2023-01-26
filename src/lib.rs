@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use eframe::CreationContext;
-use egui::{CentralPanel, ComboBox, Context, Frame, ScrollArea, TopBottomPanel};
+use egui::{CentralPanel, ComboBox, Context, ScrollArea, TopBottomPanel};
 
 use cursor::*;
 use input::{is_pressed_load, is_pressed_next, is_pressed_prev, is_pressed_save};

@@ -64,7 +64,6 @@ impl Display for SavefilePath {
         let path = self.path.to_string_lossy();
         if path.len() > 32 {
             write!(f, "...{}", &path[path.len() - 32..])?;
-            
         } else {
             write!(f, "{path}")?;
         }
