@@ -48,24 +48,6 @@ impl<T> Cursor<T> {
         self.index.load(Ordering::Acquire)
     }
 
-    pub fn next_mut(&mut self) -> &mut T {
-        self.goto(self.index.load(Ordering::Acquire) + 1);
-        self.get_mut()
-    }
-
-    pub fn prev_mut(&mut self) -> &mut T {
-        self.goto(self.index.load(Ordering::Acquire).saturating_sub(1));
-        self.get_mut()
-    }
-
-    pub fn get_mut(&mut self) -> &mut T {
-        &mut self.data[self.index.load(Ordering::Acquire)]
-    }
-
-    pub fn get_at_mut(&mut self, index: usize) -> Option<&mut T> {
-        self.data.get_mut(index)
-    }
-
     pub fn next(&self) -> &T {
         self.goto(self.index.load(Ordering::Acquire) + 1);
         self.get()
@@ -91,12 +73,6 @@ impl<T> Cursor<T> {
     pub fn push(&mut self, value: T) {
         self.data.push(value);
         self.constrain();
-    }
-
-    pub fn pop(&mut self) -> Option<T> {
-        let v = self.data.pop();
-        self.constrain();
-        v
     }
 
     pub fn remove(&mut self, index: usize) {

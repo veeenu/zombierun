@@ -5,8 +5,9 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.68"
-eframe = "0.20.1"
-egui = "0.20.1"
+eframe = "0.21.3"
+egui = "0.21.0"
+notify-rust = "4.8.0"
 regex = "1.7.1"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_kdl = "0.1.0"

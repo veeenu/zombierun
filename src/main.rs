@@ -14,5 +14,6 @@ fn main() {
             ..Default::default()
         },
         Box::new(|cc| Box::new(zombierun::App::new(cc))),
-    );
+    )
+    .ok();
 }

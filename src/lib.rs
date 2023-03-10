@@ -13,6 +13,7 @@ use egui::{CentralPanel, ComboBox, Context, ScrollArea, TopBottomPanel};
 
 use cursor::*;
 use input::{is_pressed_load, is_pressed_next, is_pressed_prev, is_pressed_save};
+use notify_rust::Notification;
 use savefiles::{Savefile, SavefilePath};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -117,8 +118,19 @@ impl App {
         Ok(())
     }
 
+    fn show_notif(idx: usize) -> Result<()> {
+        Notification::new()
+            .summary("Zombie Run")
+            .body(&format!("Loaded savefile #{idx}"))
+            .timeout(Duration::from_secs(1))
+            .show()?;
+
+        Ok(())
+    }
+
     fn load(&mut self) -> Result<()> {
         if let Some(savefiles) = self.current_savefiles() {
+            let idx = savefiles.index();
             savefiles.get().load(&self.current_savefile_path().path)?;
             self.message = Some(SelfDestructible::new(
                 format!(
@@ -128,7 +140,9 @@ impl App {
                 ),
                 Duration::from_secs(5),
             ));
+            App::show_notif(idx)?;
         }
+
         Ok(())
     }
 
@@ -142,6 +156,8 @@ impl App {
                 format!("Loaded #{:03} ({})", idx, self.current_savefile_path().game),
                 Duration::from_secs(5),
             ));
+
+            App::show_notif(idx)?;
         }
         Ok(())
     }
@@ -197,50 +213,54 @@ impl eframe::App for App {
         });
 
         CentralPanel::default().show(ctx, |ui| {
-            ScrollArea::vertical().show(ui, |ui| {
-                ui.vertical(|ui| {
-                    let mut sel_index = self.current_savefiles().map(|s| s.index()).unwrap_or(0);
-                    let mut to_remove: Option<usize> = None;
-                    let mut to_load: Option<usize> = None;
+            ScrollArea::vertical()
+                .max_width(f32::INFINITY)
+                .auto_shrink([false; 2])
+                .show(ui, |ui| {
+                    ui.vertical(|ui| {
+                        let mut sel_index =
+                            self.current_savefiles().map(|s| s.index()).unwrap_or(0);
+                        let mut to_remove: Option<usize> = None;
+                        let mut to_load: Option<usize> = None;
 
-                    for (idx, savefile) in
-                        self.current_savefiles_mut().data().iter().enumerate().rev()
-                    {
-                        let elapsed = savefile.saved().elapsed().as_secs_f64();
-                        let hours = (elapsed / 3600.).floor();
-                        let minutes = ((elapsed / 60.) % 60.).floor();
-                        let seconds = (elapsed % 60.).floor();
-                        let uid = savefile.uid;
-                        ui.horizontal(|ui| {
-                            ui.radio_value(
-                                &mut sel_index,
-                                idx,
-                                format!(
+                        for (idx, savefile) in
+                            self.current_savefiles_mut().data().iter().enumerate().rev()
+                        {
+                            let elapsed = savefile.saved().elapsed().as_secs_f64();
+                            let hours = (elapsed / 3600.).floor();
+                            let minutes = ((elapsed / 60.) % 60.).floor();
+                            let seconds = (elapsed % 60.).floor();
+                            let uid = savefile.uid;
+                            ui.horizontal(|ui| {
+                                ui.radio_value(
+                                    &mut sel_index,
+                                    idx,
+                                    format!(
                                 "#[{idx:02}] [{uid:03}] - {hours:02}:{minutes:02}:{seconds:02} ago"
                             ),
-                            );
+                                );
 
-                            if ui.button("Load").clicked() {
-                                to_load = Some(idx);
-                            }
+                                if ui.button("Load").clicked() {
+                                    to_load = Some(idx);
+                                }
 
-                            if ui.button("Remove").clicked() {
-                                to_remove = Some(idx);
-                            }
-                        });
-                    }
+                                if ui.button("Remove").clicked() {
+                                    to_remove = Some(idx);
+                                }
+                            });
+                        }
 
-                    if let Some(to_load) = to_load {
-                        self.load_at(to_load).ok();
-                    }
+                        if let Some(to_load) = to_load {
+                            self.load_at(to_load).ok();
+                        }
 
-                    if let Some(to_remove) = to_remove {
-                        self.current_savefiles_mut().remove(to_remove);
-                    }
+                        if let Some(to_remove) = to_remove {
+                            self.current_savefiles_mut().remove(to_remove);
+                        }
 
-                    self.current_savefiles_mut().goto(sel_index);
+                        self.current_savefiles_mut().goto(sel_index);
+                    });
                 });
-            });
         });
     }
 }
