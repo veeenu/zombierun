@@ -131,6 +131,9 @@ impl App {
     fn load(&mut self) -> Result<()> {
         if let Some(savefiles) = self.current_savefiles() {
             let idx = savefiles.index();
+            if savefiles.len() == 0 {
+                return Ok(());
+            }
             savefiles.get().load(&self.current_savefile_path().path)?;
             self.message = Some(SelfDestructible::new(
                 format!(
@@ -197,10 +200,10 @@ impl eframe::App for App {
 
         TopBottomPanel::bottom("buttons").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                if ui.button("Add savefile").clicked() {
+                if ui.button("Add savefile (Shift + N)").clicked() {
                     self.save().ok();
                 }
-                if ui.button("Load savefile").clicked() {
+                if ui.button("Load savefile (Shift + L)").clicked() {
                     self.load().ok();
                 }
 
@@ -240,7 +243,7 @@ impl eframe::App for App {
                             ),
                                 );
 
-                                if ui.button("Load").clicked() {
+                                if ui.button("Load (Shift + L)").clicked() {
                                     to_load = Some(idx);
                                 }
 
